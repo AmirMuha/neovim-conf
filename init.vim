@@ -4,6 +4,11 @@ if empty(glob('~/.local/share/nvim/site/autoload/plug.vim'))
         \ https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
     autocmd VimEnter * PlugInstall --sync | source ~/.config/nvim/init.vim
 endif
+
+set nocompatible
+" Set this to 1 to use ultisnips for snippet handling
+let s:using_snippets = 0
+
 call plug#begin('~/.vim/plugged')
   Plug 'posva/vim-vue' " syntax highlighting for vuejs components
   Plug 'ap/vim-buftabline' 
@@ -38,13 +43,15 @@ call plug#begin('~/.vim/plugged')
   Plug 'tpope/vim-commentary'
   Plug 'flazz/vim-colorschemes'
   Plug 'vim-syntastic/syntastic'
-  " Plug 'dense-analysis/ale'
+  Plug 'sheerun/vim-polyglot'
   Plug 'rdnetto/YCM-Generator', { 'branch': 'stable' }
   Plug 'fatih/vim-go', { 'tag': '*' }
   Plug 'nsf/gocode', { 'tag': 'v.20150303', 'rtp': 'vim' }
   Plug 'tpope/vim-fireplace', { 'for': 'clojure' }
   Plug 'SirVer/ultisnips' | Plug 'honza/vim-snippets'
   Plug 'tpope/vim-obsession'
+  Plug 'tpope/vim-dispatch'
+  Plug 'Shougo/vimproc.vim', {'do' : 'make'}
   Plug 'easymotion/vim-easymotion'
   Plug 'haya14busa/incsearch.vim'
   Plug 'haya14busa/incsearch-easymotion.vim'
@@ -53,10 +60,20 @@ call plug#begin('~/.vim/plugged')
   Plug 'peitalin/vim-jsx-typescript'
   Plug 'myhere/vim-nodejs-complete'
   Plug 'EdenEast/nightfox.nvim' " Vim-Plug
+  Plug 'OmniSharp/omnisharp-vim'
+  " Mappings, code-actions available flag and statusline integration
+  Plug 'nickspoons/vim-sharpenup'
+  " Linting/error highlighting
+  Plug 'dense-analysis/ale'
+  " Autocompletion
+  Plug 'prabirshrestha/asyncomplete.vim'
+  " Snippet support
+  if s:using_snippets
+    Plug 'sirver/ultisnips'
+  endif
 call plug#end()
 
 set termbidi
-
 let g:nodejs_complete_config = {
 \  'js_compl_fn': 'jscomplete#CompleteJS',
 \  'max_node_compl_len': 15
@@ -123,9 +140,35 @@ map ; :FZF<CR>
 " map ; :GFiles<CR>
 let mapleader = " "
 nnoremap <silent><leader>1 :source ~/.config/nvim/init.vim \| :PlugInstall<CR>
-" CoC extensions
+" Coc extensions
+" \ 'coc-omnisharp',    
 let g:coc_global_extensions = [
-  \ 'coc-tsserver'
+  \ 'coc-snippets',
+  \ 'coc-pairs',
+  \ 'coc-tsserver',
+  \ 'coc-eslint',
+  \ 'coc-prettier',
+  \ 'coc-css',          
+  \ 'coc-json',
+  \ 'coc-snippets',
+  \ 'coc-yaml',
+  \ 'coc-cssmodules',
+  \ 'coc-marketplace',
+  \ 'coc-sql',
+  \ 'coc-docker',
+  \ 'coc-tabnine',
+  \ 'coc-dotenv',
+  \ 'coc-pairs',
+  \ 'coc-tsserver',
+  \ 'coc-eslint',
+  \ 'coc-prettier',
+  \ 'coc-webpack',
+  \ 'coc-html',         
+  \ 'coc-scssmodules',
+  \ 'coc-webview',
+  \ '@eddiewang/coc-tailwindcss',
+  \ '@vim-geek/coc-tailwind-intellisense',
+  \ '@yaegassy/coc-tailwindcss3',
   \ ]
 if isdirectory('./node_modules') && isdirectory('./node_modules/prettier')
   let g:coc_global_extensions += ['coc-prettier']
@@ -218,6 +261,8 @@ set tabstop=2
 set shiftwidth=2
 set softtabstop=2
 
+let g:coc_disable_startup_warning = 1
+
 nnoremap <C-s> :w!<CR>
 inoremap <C-s> <Esc>:w!<CR>
 " inoremap {<CR> {<CR><BS>}<Esc>ko
@@ -255,18 +300,14 @@ autocmd BufEnter * call SyncTree()
 " syntacx highlighting only when a buffer is open
 autocmd BufEnter *.{js,jsx,ts,tsx} :syntax sync fromstart
 autocmd BufLeave *.{js,jsx,ts,tsx} :syntax sync clear
-" coc config
-let g:coc_global_extensions = [
-  \ 'coc-snippets',
-  \ 'coc-pairs',
-  \ 'coc-tsserver',
-  \ 'coc-eslint',
-  \ 'coc-prettier',
-  \ 'coc-json',
-  \ ]
 " from readme
 " if hidden is not set, TextEdit might fail.
-set hidden " Some servers have issues with backupeasymotion files, see #649 set nobackup set nowritebackup " Better display for messages set cmdheight=2 " You will have bad experience for diagnostic messages when it's default 4000.
+set hidden 
+" Some servers have issues with backupeasymotion files, see #649 
+" set nobackup 
+" set nowritebackup 
+" " Better display for messages 
+" set cmdheight=2 " You will have bad experience for diagnostic messages when it's default 4000.
 set updatetime=0
 
 " don't give |ins-completion-menu| messages.
@@ -375,3 +416,161 @@ nnoremap <silent> <space>j  :<C-u>CocNext<CR>
 nnoremap <silent> <space>k  :<C-u>CocPrev<CR>
 " Resume latest coc list
 nnoremap <silent> <space>p  :<C-u>CocListResume<CR>
+
+" ====================== FROM ==== https://github.com/OmniSharp/omnisharp-vim/wiki/Example-config =================
+" Settings: {{{
+
+let g:OmniSharp_server_path = '~/.config/omnisharp/omnisharp.http-linux-x64/run'
+let g:OmniSharp_start_server = 1
+
+filetype indent plugin on
+if !exists('g:syntax_on') | syntax enable | endif
+scriptencoding utf-8
+
+
+" set completeopt=menuone,noinsert,noselect,popuphidden
+" set completepopup=highlight:Pmenu,border:off
+
+set backspace=indent,eol,start
+set shiftround
+" set textwidth=80
+set title
+
+set nofixendofline
+set nostartofline
+set splitbelow
+set splitright
+
+set hlsearch
+set incsearch
+" set nonumber
+set noruler
+set noshowmode
+
+" set mouse=a
+" set updatetime=1000
+
+" Colors: {{{
+augroup ColorschemePreferences
+  autocmd!
+  " These preferences clear some gruvbox background colours, allowing transparency
+  autocmd ColorScheme * highlight Normal     ctermbg=NONE guibg=NONE
+  autocmd ColorScheme * highlight SignColumn ctermbg=NONE guibg=NONE
+  autocmd ColorScheme * highlight Todo       ctermbg=NONE guibg=NONE
+  " Link ALE sign highlights to similar equivalents without background colours
+  autocmd ColorScheme * highlight link ALEErrorSign   WarningMsg
+  autocmd ColorScheme * highlight link ALEWarningSign ModeMsg
+  autocmd ColorScheme * highlight link ALEInfoSign    Identifier
+augroup END
+
+" Use truecolor in the terminal, when it is supported
+" if has('termguicolors')
+"   set termguicolors
+" endif
+
+" }}}
+
+" ALE: {{{
+let g:ale_sign_error = '•'
+let g:ale_sign_warning = '•'
+let g:ale_sign_info = '·'
+let g:ale_sign_style_error = '·'
+let g:ale_sign_style_warning = '·'
+
+let g:ale_linters = { 'cs': ['OmniSharp'] }
+" }}}
+
+" Asyncomplete: {{{
+let g:asyncomplete_auto_popup = 1
+let g:asyncomplete_auto_completeopt = 0
+" }}}
+
+" Sharpenup: {{{
+" All sharpenup mappings will begin with `<Space>os`, e.g. `<Space>osgd` for
+" :OmniSharpGotoDefinition
+let g:sharpenup_map_prefix = '<Space>os'
+
+let g:sharpenup_statusline_opts = { 'Text': '%s (%p/%P)' }
+let g:sharpenup_statusline_opts.Highlight = 0
+
+augroup OmniSharpIntegrations
+  autocmd!
+  autocmd User OmniSharpProjectUpdated,OmniSharpReady call lightline#update()
+augroup END
+" }}}
+
+" Lightline: {{{
+let g:lightline = {
+\ 'colorscheme': 'gruvbox',
+\ 'active': {
+\   'right': [
+\     ['linter_checking', 'linter_errors', 'linter_warnings', 'linter_infos', 'linter_ok'],
+\     ['lineinfo'], ['percent'],
+\     ['fileformat', 'fileencoding', 'filetype', 'sharpenup']
+\   ]
+\ },
+\ 'inactive': {
+\   'right': [['lineinfo'], ['percent'], ['sharpenup']]
+\ },
+\ 'component': {
+\   'sharpenup': sharpenup#statusline#Build()
+\ },
+\ 'component_expand': {
+\   'linter_checking': 'lightline#ale#checking',
+\   'linter_infos': 'lightline#ale#infos',
+\   'linter_warnings': 'lightline#ale#warnings',
+\   'linter_errors': 'lightline#ale#errors',
+\   'linter_ok': 'lightline#ale#ok'
+  \  },
+  \ 'component_type': {
+  \   'linter_checking': 'right',
+  \   'linter_infos': 'right',
+  \   'linter_warnings': 'warning',
+  \   'linter_errors': 'error',
+  \   'linter_ok': 'right'
+\  }
+\}
+" Use unicode chars for ale indicators in the statusline
+let g:lightline#ale#indicator_checking = "\uf110 "
+let g:lightline#ale#indicator_infos = "\uf129 "
+let g:lightline#ale#indicator_warnings = "\uf071 "
+let g:lightline#ale#indicator_errors = "\uf05e "
+let g:lightline#ale#indicator_ok = "\uf00c "
+" }}}
+
+" OmniSharp: {{{
+let g:OmniSharp_popup_position = 'peek'
+if has('nvim')
+  let g:OmniSharp_popup_options = {
+  \ 'winblend': 30,
+  \ 'winhl': 'Normal:Normal,FloatBorder:ModeMsg',
+  \ 'border': 'rounded'
+  \}
+else
+  let g:OmniSharp_popup_options = {
+  \ 'highlight': 'Normal',
+  \ 'padding': [0],
+  \ 'border': [1],
+  \ 'borderchars': ['─', '│', '─', '│', '╭', '╮', '╯', '╰'],
+  \ 'borderhighlight': ['ModeMsg']
+  \}
+endif
+let g:OmniSharp_popup_mappings = {
+\ 'sigNext': '<C-n>',
+\ 'sigPrev': '<C-p>',
+\ 'pageDown': ['<C-f>', '<PageDown>'],
+\ 'pageUp': ['<C-b>', '<PageUp>']
+\}
+
+if s:using_snippets
+  let g:OmniSharp_want_snippet = 1
+endif
+
+let g:OmniSharp_highlight_groups = {
+\ 'ExcludedCode': 'NonText'
+\}
+" }}}
+
+
+let g:python3_host_prog = "/usr/bin/python3"
+let g:python_host_prog = "/usr/bin/python2"

@@ -1,17 +1,13 @@
 {
   "eslint.autoFixOnSave": true,
-  "eslint.filetypes": [
+  "omnisharp.useDotnet": false,
+  "omnisharp.version": "v.1.37.3",
+  "omnisharp.trace.server": "information",
+  "omnisharp.debug.server": true,
+  "coc.preferences.formatOnSaveFiletypes": [
     "javascript",
     "javascriptreact",
     "typescript",
     "typescriptreact"
-  ],
-  "coc.preferences.formatOnSaveFiletypes": [
-   "javascript",
-   "javascriptreact",
-   "typescript",
-   "typescriptreact"
   ]
-  // "tsserver.formatOnType": true,
-  // "coc.preferences.formatOnType": true
 }
