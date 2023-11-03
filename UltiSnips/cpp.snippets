@@ -1,0 +1,17 @@
+snippet cpp_napi "Function declaration" b
+#include <iostream>
+#include <napi/napi.h>
+
+Napi::Value ${1:function_name}(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+    // C++ function implementation
+    return env.Null();
+}
+
+Napi::Object Init(Napi::Env env, Napi::Object exports) {
+    exports.Set("${1:function_name}", Napi::Function::New(env, ${1:function_name}));
+    return exports;
+}
+
+NODE_API_MODULE(addon, Init)
+endsnippet
