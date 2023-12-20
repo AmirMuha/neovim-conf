@@ -13,5 +13,6 @@
         "width": "80%"
       }
     }
-  }
+  },
+  "snippets.ultisnips.pythonPrompt": false
 }
